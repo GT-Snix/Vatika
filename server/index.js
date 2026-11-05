@@ -1,8 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
+// Must be the first import: it fills process.env from .env before
+// lib/db.js (imported via the routes) reads DATABASE_URL.
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
 
-const plantsRouter = require('./routes/plants');
+import plantsRouter from './routes/plants.js';
 
 const app = express();
 

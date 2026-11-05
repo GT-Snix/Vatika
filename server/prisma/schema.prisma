@@ -1,14 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  // Prisma 7's generator. It writes the client into our project folder
+  // (not node_modules), so lib/db.js imports it from there.
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
 }
 
+// The connection URL lives in prisma.config.ts, not here (Prisma 7 rule).
 datasource db {
-  provider  = "postgresql"
-  // Pooled (PgBouncer) URL for the running app.
-  url       = env("DATABASE_URL")
-  // Direct URL for migrations: PgBouncer's transaction mode breaks the
-  // prepared statements / advisory locks that `prisma migrate` relies on.
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model User {

@@ -1,6 +1,6 @@
 // Public encyclopedia routes: anyone can read plant info, no login needed.
-const { Router } = require('express');
-const prisma = require('../lib/db');
+import { Router } from 'express';
+import prisma from '../lib/db.js';
 
 const router = Router();
 
@@ -30,4 +30,4 @@ router.get('/:id', async (req, res) => {
   res.json(plant);
 });
 
-module.exports = router;
+export default router;

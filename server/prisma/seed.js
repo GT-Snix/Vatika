@@ -1,6 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+// Load .env so lib/db.js can read DATABASE_URL.
+import 'dotenv/config';
+// Reuse the app's client so the seed connects exactly the way the server does.
+import prisma from '../lib/db.js';
 
 const plants = [
   {
