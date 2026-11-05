@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled (PgBouncer) URL for the running app.
+  url       = env("DATABASE_URL")
+  // Direct URL for migrations: PgBouncer's transaction mode breaks the
+  // prepared statements / advisory locks that `prisma migrate` relies on.
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  email        String      @unique
+  passwordHash String
+  createdAt    DateTime    @default(now())
+  plants       UserPlant[]
+}
+
+// The encyclopedia: one shared row per species, same for every user.
+model Plant {
+  id                 Int         @id @default(autoincrement())
+  name               String
+  botanicalName      String
+  uses               String      @db.Text
+  waterIntervalHours Int
+  owners             UserPlant[]
+}
+
+// A user's personal copy of a plant. Only the watering time is per-user;
+// everything descriptive lives on Plant.
+model UserPlant {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  plantId       Int
+  lastWateredAt DateTime
+  // Cascade so deleting a user (or plant) doesn't leave orphan garden rows.
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plant         Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  // A user owns each plant at most once.
+  @@unique([userId, plantId])
+}
