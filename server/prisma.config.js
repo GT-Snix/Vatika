@@ -1,5 +1,6 @@
 // Settings for the Prisma CLI (migrate, seed, studio, generate).
 // The running server never reads this file; it uses lib/db.js.
+// ES module syntax because package.json has "type": "module".
 import 'dotenv/config'; // load .env so env('DATABASE_URL') below has a value
 import { defineConfig, env } from 'prisma/config';
 
