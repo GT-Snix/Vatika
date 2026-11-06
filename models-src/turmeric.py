@@ -1,5 +1,6 @@
-"""Turmeric: a clump of large, long oval leaves, each held up on its own
-long stalk rising from the soil. (The useful rhizome is underground, so unseen.)
+"""Turmeric: a clump of large, long oval leaves on long stalks, with a
+cone-shaped flower spike (green bracts, pink tip) rising from the middle.
+(The useful rhizome is underground, so unseen.)
 
 Run headless from the repo root:
   /Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \
@@ -27,17 +28,24 @@ LEAVES = [
 STALK_TILT = math.radians(80)  # stalks rise almost straight up
 
 
+def flower_spike():
+    """Short stalk, then a cone of bracts: pale green below, pink at the tip."""
+    top = (0.015, -0.01, lib.POT_HEIGHT + 0.16)
+    lib.make_stem((0.015, -0.01, lib.PLANT_BASE), top, radius=0.008)
+    lib.make_cone(top, 0.08, 0.035, 0.022, "bract_green")
+    lib.make_cone((top[0], top[1], top[2] + 0.08), 0.06, 0.022, 0.0, "bract_pink")
+
+
 def build():
-    lib.clear_scene()
-    lib.make_pot()
-    for n, (yaw_deg, stalk_len, leaf_len, leaf_tilt) in enumerate(LEAVES):
-        yaw = math.radians(yaw_deg)
+    lib.start("turmeric", "glazed")
+    for yaw_deg, stalk_len, leaf_len, leaf_tilt in LEAVES:
+        yaw = math.radians(yaw_deg) + lib.jitter(10)
         # Stalks start close together, as they grow from one rhizome.
         base = lib.step((0, 0, lib.PLANT_BASE), yaw, 0, 0.02)
-        top = lib.step(base, yaw, STALK_TILT, stalk_len)
+        top = lib.step(base, yaw, STALK_TILT + lib.jitter(5), stalk_len)
         lib.make_stem(base, top, radius=0.007)
-        lib.make_leaf(top, yaw, math.radians(leaf_tilt), leaf_len, leaf_len * 0.45,
-                      "leaf_dark" if n % 2 else "leaf")
+        lib.make_leaf(top, yaw, math.radians(leaf_tilt), leaf_len, leaf_len * 0.45)
+    flower_spike()
 
 
 build()

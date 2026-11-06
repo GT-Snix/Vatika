@@ -32,9 +32,9 @@ def material(name, rgb):
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 
-# 4 x 2 grid, 1 m apart, back row first.
+# 4 x 2 grid, 1.1 m apart, back row first; rows far enough apart that labels show.
 for i, name in enumerate(PLANTS):
-    x, y = (i % 4 - 1.5) * 1.0, (0.55 if i < 4 else -0.55)
+    x, y = (i % 4 - 1.5) * 1.1, (0.85 if i < 4 else -0.85)
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=str(MODELS / f"{name}.glb"))
     for obj in set(bpy.data.objects) - before:
@@ -70,9 +70,9 @@ bg.inputs["Strength"].default_value = 0.5
 scene.world = world
 
 cam_data = bpy.data.cameras.new("cam")
-cam_data.lens = 40
+cam_data.lens = 42
 cam = bpy.data.objects.new("cam", cam_data)
-cam.location = (0.4, -4.4, 2.4)
+cam.location = (0.0, -5.2, 3.3)
 cam.rotation_euler = (Vector((0, 0, 0.3)) - cam.location).to_track_quat("-Z", "Y").to_euler()
 scene.collection.objects.link(cam)
 scene.camera = cam

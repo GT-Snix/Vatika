@@ -23,28 +23,29 @@ LEAF_LEN = 0.055
 
 def stem_with_leaves(profile, yaw, flower=False):
     """Lay a stem along `profile` at angle `yaw`, with two leaf pairs along each piece."""
-    points = [(r * math.cos(yaw), r * math.sin(yaw), z) for r, z in profile]
+    # Each trail sags by its own random amount, so they don't hang in perfect symmetry.
+    sag = lib.rng.uniform(0.85, 1.1)
+    points = [(r * math.cos(yaw), r * math.sin(yaw), SOIL + (z - SOIL) * (sag if z < SOIL else 1))
+              for r, z in profile]
     lib.make_path(points, radius=0.004)
     # A leaf pointing along (cos yaw, sin yaw) has make_leaf yaw = yaw - 90 degrees.
     heading = yaw - math.pi / 2
-    for i, (a, b) in enumerate(zip(points, points[1:])):
-        mat = "leaf_dark" if i % 2 else "leaf"
+    for a, b in zip(points, points[1:]):
         for t in (0.3, 0.8):
             for side in (1, -1):  # opposite pair, sticking out to either side of the stem
                 lib.make_leaf(lib.lerp(a, b, t), heading + side * math.radians(70),
-                              math.radians(15), LEAF_LEN, LEAF_LEN * 0.55, mat)
+                              math.radians(15), LEAF_LEN, LEAF_LEN * 0.55)
     if flower:
         lib.make_berry(points[-1], 0.012, "flower")  # a small bloom at the stem tip
 
 
 def build():
-    lib.clear_scene()
-    lib.make_pot()
+    lib.start("brahmi", "stone")
     for k in range(7):
-        stem_with_leaves(TRAIL, math.radians(k * 360 / 7))
+        stem_with_leaves(TRAIL, math.radians(k * 360 / 7) + lib.jitter(12))
     # A small upright mound in the middle, where the flowers sit.
     for k in range(5):
-        stem_with_leaves(UPRIGHT, math.radians(30 + k * 72), flower=True)
+        stem_with_leaves(UPRIGHT, math.radians(30 + k * 72) + lib.jitter(20), flower=True)
 
 
 build()

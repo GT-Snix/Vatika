@@ -31,9 +31,8 @@ def leaf_pairs(start, end, first_yaw):
         yaw = math.radians(first_yaw) + i * math.pi / 2
         length = 0.11 * (1 - 0.45 * t)  # leaves shrink toward the top
         tilt = math.radians(20 + 35 * t)  # and point more upward
-        mat = "leaf_dark" if i % 2 else "leaf"  # alternate shades so pairs read separately
         for side in (0, math.pi):  # opposite: the second leaf is 180 degrees round
-            lib.make_leaf(lib.lerp(start, end, t), yaw + side, tilt, length, length * 0.8, mat)
+            lib.make_leaf(lib.lerp(start, end, t), yaw + side, tilt, length, length * 0.8)
 
 
 def flower_spike(top, height):
@@ -52,10 +51,10 @@ def flower_spike(top, height):
 
 
 def build():
-    lib.clear_scene()
-    lib.make_pot()
+    lib.start("tulsi", "terracotta")
     for bx, by, tx, ty, h, yaw in STEMS:
-        start, end = (bx, by, lib.PLANT_BASE), (tx, ty, lib.POT_HEIGHT + h)
+        start = (bx, by, lib.PLANT_BASE)
+        end = lib.lean((tx, ty, lib.POT_HEIGHT + h))  # no two stems stand quite the same
         lib.make_stem(start, end)
         leaf_pairs(start, end, yaw)
         # Centre spike is longest so the plant tops out at about 0.8 m.

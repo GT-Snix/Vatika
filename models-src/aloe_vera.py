@@ -1,5 +1,5 @@
-"""Aloe Vera: a stemless rosette of thick, pointed leaves rising straight
-from the soil, outer leaves spreading low and inner ones standing upright.
+"""Aloe Vera: a tight, stemless rosette of 10 thick, fleshy leaves, broad at
+the base and tapering to a point, with small teeth along their edges.
 
 Run headless from the repo root:
   /Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \
@@ -12,27 +12,25 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))  # so `import lib` finds lib.py next to us
 import lib
 
-# Rings from outside to centre: (leaves in ring, blade length, tilt above horizontal in degrees,
-# yaw offset in degrees). Offsetting each ring puts its leaves in the gaps of the ring below.
+# Two rings, outside first: (leaves, length, base width, thickness, tilt in degrees, yaw offset).
+# The inner ring's offset puts its leaves in the gaps of the outer ring.
 RINGS = [
-    (7, 0.36, 25, 0),
-    (6, 0.42, 45, 25),
-    (5, 0.42, 63, 8),
-    (3, 0.36, 78, 50),
+    (6, 0.28, 0.13, 0.05, 30, 0),
+    (4, 0.25, 0.11, 0.045, 58, 45),
 ]
-BLADE_WIDTH = 0.08
+ROSETTE_RADIUS = 0.015  # leaf bases sit on this tiny circle: a tight rosette
 
 
 def build():
-    lib.clear_scene()
-    lib.make_pot()
-    for r, (count, length, tilt, offset) in enumerate(RINGS):
-        mat = "leaf_dark" if r % 2 == 0 else "leaf"  # alternate shades so rings read separately
+    lib.start("aloe_vera", "stone")
+    for count, length, width, thickness, tilt, offset in RINGS:
         for k in range(count):
             yaw = math.radians(offset + k * 360 / count)
-            # All blades grow from the centre, starting just under the soil.
-            lib.make_blade((0, 0, lib.PLANT_BASE), yaw, math.radians(tilt),
-                           length, BLADE_WIDTH, mat)
+            # Base just under the soil, a little out from the centre, on the leaf's own side.
+            base = lib.step((0, 0, lib.PLANT_BASE), yaw, 0, ROSETTE_RADIUS)
+            # Aloe greens skew grey-blue in life; the palette's deeper greens suit it best.
+            green = lib.rng.choice(["leaf_deep", "leaf_mid", "leaf_mid"])
+            lib.make_aloe_leaf(base, yaw, math.radians(tilt), length, width, thickness, green)
 
 
 build()

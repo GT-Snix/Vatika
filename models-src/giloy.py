@@ -18,13 +18,14 @@ POINTS_PER_TURN = 8
 
 
 def spiral(turns, top, phase):
-    """Points winding round the stake from the soil up to height `top`."""
+    """Points winding round the stake from the soil up to height `top`, slightly wobbly."""
     count = int(turns * POINTS_PER_TURN)
     points = []
     for i in range(count + 1):
         a = phase + 2 * math.pi * i / POINTS_PER_TURN
+        r = SPIRAL_RADIUS * lib.rng.uniform(0.85, 1.15)  # a real vine never winds evenly
         z = lib.PLANT_BASE + (top - lib.PLANT_BASE) * i / count
-        points.append((SPIRAL_RADIUS * math.cos(a), SPIRAL_RADIUS * math.sin(a), z))
+        points.append((r * math.cos(a), r * math.sin(a), z))
     return points
 
 
@@ -38,8 +39,7 @@ def vine(turns, top, phase):
         outward = math.atan2(y, x)
         size = 0.10 * (1 - 0.4 * z / top)
         # Slight downward tilt: giloy's heart-shaped leaves hang from their stalks.
-        lib.make_leaf((x, y, z), outward - math.pi / 2, math.radians(-15), size, size * 0.95,
-                      "leaf_dark" if i % 4 else "leaf")
+        lib.make_leaf((x, y, z), outward - math.pi / 2, math.radians(-15), size, size * 0.95)
     return points
 
 
@@ -53,10 +53,9 @@ def berry_cluster(point):
 
 
 def build():
-    lib.clear_scene()
-    lib.make_pot()
-    # The stake is dark brown like wood (the soil colour), slightly thicker than the vine.
-    lib.make_stem((0, 0, lib.PLANT_BASE), (0, 0, STAKE_TOP), radius=0.009, mat_key="soil")
+    lib.start("giloy", "glazed")
+    # The stake is dark wood, slightly thicker than the vine.
+    lib.make_stem((0, 0, lib.PLANT_BASE), (0, 0, STAKE_TOP), radius=0.009, color="wood")
     first = vine(2.5, STAKE_TOP - 0.02, 0)
     second = vine(2.0, STAKE_TOP - 0.15, math.pi)  # shorter strand on the other side, for fullness
     berry_cluster(first[9])

@@ -44,7 +44,7 @@ PALETTE = {
 }
 GREENS = ["leaf_deep", "leaf_mid", "leaf_light", "leaf_new"]
 GREEN_WEIGHTS = [3, 4, 3, 1]  # new growth is the rarest
-UNDERSIDE = 0.72  # leaf backs are this much darker than their fronts
+UNDERSIDE = 0.82  # leaf backs are this much darker than their fronts
 
 POT_HEIGHT = 0.205  # soil surface: 1.5 cm below the rim top (0.22); plants grow from here
 # Stems start 1 cm under the soil, so their bottom caps never lie in the soil's plane (z-fighting).
@@ -321,7 +321,8 @@ def make_aloe_leaf(position, yaw, tilt, length, width, thickness, color=None):
         pts = [Vector(verts[v]) for v in f]
         normal = (pts[1] - pts[0]).cross(pts[2] - pts[0])
         centre = sum(pts, Vector()) / len(pts)
-        axis = Vector((0, centre.y, lift(centre.y / length) - thickness * 0.4))
+        tc = centre.y / length  # how far along the leaf; it thins toward the tip
+        axis = Vector((0, centre.y, lift(tc) - 0.45 * thickness * (1 - tc)))
         if normal.dot(centre - axis) < 0:
             faces[i] = tuple(reversed(f))
     leaf = _mesh("aloe", verts, faces, None, colors)
@@ -331,9 +332,8 @@ def make_aloe_leaf(position, yaw, tilt, length, width, thickness, color=None):
     for t in (0.2, 0.42, 0.62):
         w, y, z = width * (1 - t) ** 0.8 / 2, length * t, lift(t)
         for side in (1, -1):
-            tooth = [(side * w, y - 0.006, z), (side * (w + 0.008), y + 0.004, z), (side * w, y + 0.006, z)]
-            _sheet("tooth", tooth, [(0, 1, 2) if side > 0 else (0, 2, 1)], "aloe_tooth",
-                   position, yaw, tilt)
+            tooth = [(side * w, y - 0.007, z), (side * (w + 0.012), y + 0.005, z), (side * w, y + 0.007, z)]
+            _sheet("tooth", tooth, [(0, 1, 2)], "aloe_tooth", position, yaw, tilt)
     return leaf
 
 
