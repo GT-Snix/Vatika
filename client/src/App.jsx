@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, getToken, setToken, setOnLoggedOut } from './api.js';
 import AuthScreen from './auth/AuthScreen.jsx';
+import Garden from './scene/Garden.jsx';
+import Hud from './ui/Hud.jsx';
 
 export default function App() {
   // Start logged in if a token survived from last time; the first /garden call checks it.
@@ -31,30 +33,20 @@ export default function App() {
 
   if (!loggedIn) return <AuthScreen onLoggedIn={() => setLoggedIn(true)} />;
 
-  const speed = garden?.speeds.find((s) => s.timeScale === garden.timeScale);
-  return (
-    <main className="card garden">
-      <header>
-        <h1>Your garden</h1>
+  if (!garden) {
+    return (
+      <main className="card">
+        {error ? <p className="error" role="alert">{error}</p> : <p className="muted">Loading your garden…</p>}
         <button type="button" className="link" onClick={logOut}>Log out</button>
-      </header>
-      {error && <p className="error" role="alert">{error}</p>}
-      {!garden && !error && <p className="muted">Loading…</p>}
-      {garden && (
-        <>
-          <p className="muted">Clock: {speed ? speed.label : ''} ({garden.timeScale}x)</p>
-          <ul className="plants">
-            {garden.plants.map((plant) => (
-              <li key={plant.id}>
-                <span>
-                  <strong>{plant.name}</strong> <em className="muted">{plant.botanicalName}</em>
-                </span>
-                <span className={`status ${plant.status}`}>{plant.health}% · {plant.status}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </main>
+      </main>
+    );
+  }
+
+  const speed = garden.speeds.find((s) => s.timeScale === garden.timeScale);
+  return (
+    <>
+      <Garden plants={garden.plants} />
+      <Hud speedLabel={speed ? speed.label : ''} timeScale={garden.timeScale} onLogOut={logOut} />
+    </>
   );
 }

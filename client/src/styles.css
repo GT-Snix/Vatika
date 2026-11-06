@@ -49,15 +49,29 @@ button {
 button:disabled { opacity: 0.6; cursor: default; }
 button.link { background: none; color: var(--accent); padding: 4px; }
 
-/* Garden list. */
-.garden { max-width: 560px; }
-.garden header { display: flex; justify-content: space-between; align-items: center; }
-.plants { list-style: none; padding: 0; margin: 12px 0 0; }
-.plants li {
-  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  padding: 10px 0; border-bottom: 1px solid var(--border);
-}
+/* Status colours (used by the plant info panel in the next stage). */
 .status { font-weight: 600; white-space: nowrap; }
 .status.healthy { color: var(--healthy); }
 .status.thirsty { color: var(--thirsty); }
 .status.wilting { color: var(--wilting); }
+
+/* 3D garden: the canvas fills the whole window, underneath the HUD and the enter button. */
+.world { position: fixed; inset: 0; }
+.hud {
+  position: fixed; top: 16px; left: 16px; right: 16px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  pointer-events: none; /* clicks pass through to the scene... */
+}
+.hud > * { pointer-events: auto; } /* ...except on the HUD's own text and button */
+.hud span {
+  background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+}
+.enter {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+  padding: 18px 28px; font-size: 1.2rem;
+}
+.enter small { font-size: 0.8rem; opacity: 0.85; }
+
+/* drei's FPS meter pins itself top-left with inline styles; move it under the HUD's way. */
+.stats { top: auto !important; bottom: 0 !important; }
