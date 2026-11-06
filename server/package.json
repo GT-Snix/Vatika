@@ -11,7 +11,8 @@
     "dev": "node --watch index.js",
     "start": "node index.js",
     "migrate": "prisma migrate dev",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "test": "node lib/health.test.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

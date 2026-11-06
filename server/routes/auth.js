@@ -6,13 +6,20 @@ import requireAuth from '../middleware/auth.js';
 
 const router = Router();
 
+// Trim and lowercase so " A@b.c" and "a@b.c" are the same account.
+// Non-strings become '' so the checks below reject them.
+function cleanEmail(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
 // POST /auth/register -> create a user plus their starting garden
 router.post('/register', async (req, res) => {
   // 1. Read input. `|| {}` so a request with no body doesn't crash here.
-  const { email, password } = req.body || {};
+  const { password } = req.body || {};
+  const email = cleanEmail(req.body?.email);
 
   // 2. Check input. typeof guards against e.g. { "password": 12345678 }.
-  if (typeof email !== 'string' || !email.includes('@')) {
+  if (!email.includes('@')) {
     return res.status(400).json({ error: 'Email must contain @' });
   }
   if (typeof password !== 'string' || password.length < 8) {
@@ -40,11 +47,12 @@ router.post('/register', async (req, res) => {
 
 // POST /auth/login -> { token }
 router.post('/login', async (req, res) => {
-  // 1. Read input.
-  const { email, password } = req.body || {};
+  // 1. Read input, cleaning the email the same way register did.
+  const { password } = req.body || {};
+  const email = cleanEmail(req.body?.email);
 
   // 2. Check input: bcrypt.compare throws on non-strings.
-  if (typeof email !== 'string' || typeof password !== 'string') {
+  if (!email || typeof password !== 'string') {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 

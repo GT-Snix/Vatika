@@ -6,6 +6,7 @@ import cors from 'cors';
 
 import plantsRouter from './routes/plants.js';
 import authRouter from './routes/auth.js';
+import gardenRouter from './routes/garden.js';
 
 // Fail fast: without a secret every login would crash, so refuse to start at all.
 if (!process.env.JWT_SECRET) {
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.use('/plants', plantsRouter);
 app.use('/auth', authRouter);
+app.use('/garden', gardenRouter);
 
 // Express 5 forwards rejected promises from async handlers here,
 // so routes don't need their own try/catch.
