@@ -33,4 +33,12 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Vatika API on http://localhost:${port}`));
+// Express 5 passes startup errors (e.g. EADDRINUSE: port already taken) to this
+// callback instead of throwing, so without this check the server would quit silently.
+app.listen(port, (err) => {
+  if (err) {
+    console.error(`Could not start on port ${port}:`, err.message);
+    process.exit(1);
+  }
+  console.log(`Vatika API on http://localhost:${port}`);
+});
