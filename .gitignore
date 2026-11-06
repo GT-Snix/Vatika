@@ -3,3 +3,5 @@ node_modules
 dist
 generated
 __pycache__
+.claude/
+**/settings.local.json
