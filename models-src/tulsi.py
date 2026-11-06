@@ -65,7 +65,7 @@ def build():
     lib.make_pot()
     soil = lib.POT_HEIGHT
     for bx, by, tx, ty, h, yaw in STEMS:
-        start, end = (bx, by, soil), (tx, ty, soil + h)
+        start, end = (bx, by, lib.PLANT_BASE), (tx, ty, soil + h)
         lib.make_stem(start, end)
         leaf_pairs(start, end, yaw)
         # Centre spike is longest so the plant tops out at about 0.8 m.

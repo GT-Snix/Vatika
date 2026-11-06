@@ -4,6 +4,7 @@ Blender is Z-up; the glTF exporter converts to Y-up for three.js.
 Units: 1 Blender unit = 1 metre. Every plant stands on the same pot,
 whose base centre is the world origin, so that point becomes the model origin.
 """
+import math
 from pathlib import Path
 
 import bpy
@@ -21,7 +22,9 @@ PALETTE = {
     "berry":     (0.80, 0.18, 0.14),
 }
 
-POT_HEIGHT = 0.22  # soil surface height: plants start growing from here
+POT_HEIGHT = 0.205  # soil surface: 1.5 cm below the rim top (0.22); plants grow from here
+# Stems start 1 cm under the soil, so their bottom caps never lie in the soil's plane (z-fighting).
+PLANT_BASE = POT_HEIGHT - 0.01
 
 
 def clear_scene():
@@ -54,19 +57,53 @@ def _finish(obj, mat_key, double_sided=False):
     return obj
 
 
+POT_SIDES = 10
+RIM_BOTTOM, RIM_TOP = 0.18, 0.22
+RIM_INNER, RIM_OUTER = 0.155, 0.185
+
+
+def _circle(radius, z):
+    """POT_SIDES points round a circle; every pot part uses the same angles so edges line up."""
+    return [(radius * math.cos(2 * math.pi * i / POT_SIDES),
+             radius * math.sin(2 * math.pi * i / POT_SIDES), z) for i in range(POT_SIDES)]
+
+
+def _mesh(name, verts, faces, mat_key):
+    """Object from raw vertices and faces (each face lists vertex numbers anticlockwise)."""
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    return _finish(obj, mat_key)
+
+
 def make_pot():
-    """Shared terracotta pot + rim + soil disc, base centred on the origin."""
-    # Cone with two radii = a tapered pot. Depth is centred, so lift by half.
-    bpy.ops.mesh.primitive_cone_add(vertices=10, radius1=0.13, radius2=0.17,
-                                    depth=0.20, location=(0, 0, 0.10))
+    """Shared terracotta pot: tapered body, hollow rim, sunken soil. Base centred on the origin.
+
+    No two faces may lie in the same plane: GPUs can't tell which is in front,
+    so they flicker ("z-fighting"). So the rim is a hollow ring, not a solid
+    cylinder with a lid, and the soil sits below the rim top, inside the ring.
+    """
+    # Body: cone with two radii = a tapered pot. It stops where the rim starts
+    # (radius2 keeps the old taper) so its lid stays well below the soil.
+    bpy.ops.mesh.primitive_cone_add(vertices=POT_SIDES, radius1=0.13, radius2=0.166,
+                                    depth=RIM_BOTTOM, location=(0, 0, RIM_BOTTOM / 2))
     _finish(bpy.context.object, "pot")
-    bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.185, depth=0.04,
-                                        location=(0, 0, 0.20))
-    _finish(bpy.context.object, "pot_rim")
-    # Soil sits just below the rim top so the rim edge stays visible.
-    bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.165, depth=0.02,
-                                        location=(0, 0, POT_HEIGHT - 0.01))
-    _finish(bpy.context.object, "soil")
+
+    # Rim: four circles of points (outer bottom/top, inner top/bottom) joined by quads.
+    n = POT_SIDES
+    verts = (_circle(RIM_OUTER, RIM_BOTTOM) + _circle(RIM_OUTER, RIM_TOP)
+             + _circle(RIM_INNER, RIM_TOP) + _circle(RIM_INNER, RIM_BOTTOM))
+    faces = []
+    for i in range(n):
+        j = (i + 1) % n  # next point round, wrapping back to 0
+        faces.append((i, j, n + j, n + i))                  # outer wall, faces out
+        faces.append((n + i, n + j, 2 * n + j, 2 * n + i))  # flat top, faces up
+        faces.append((2 * n + i, 2 * n + j, 3 * n + j, 3 * n + i))  # inner wall, faces in
+    _mesh("rim", verts, faces, "pot_rim")
+
+    # Soil: one flat face that exactly fills the inside of the ring, sunk below its top.
+    _mesh("soil", _circle(RIM_INNER, POT_HEIGHT), [tuple(range(n))], "soil")
 
 
 def make_stem(start, end, radius=0.008):
