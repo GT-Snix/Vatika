@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/db.js';
 import requireAuth from '../middleware/auth.js';
-import { health, minutesUntil } from '../lib/health.js';
+import { health, secondsUntil } from '../lib/health.js';
 import { SPEEDS, isValidSpeed } from '../lib/clock.js';
 
 const router = Router();
@@ -17,8 +17,8 @@ function toGardenPlant(row, now, timeScale) {
     ...row.plant,
     lastWateredAt: row.lastWateredAt.toISOString(),
     ...health(...args),
-    minutesUntilThirsty: minutesUntil('thirsty', ...args),
-    minutesUntilWilting: minutesUntil('wilting', ...args),
+    secondsUntilThirsty: secondsUntil('thirsty', ...args),
+    secondsUntilWilting: secondsUntil('wilting', ...args),
   };
 }
 

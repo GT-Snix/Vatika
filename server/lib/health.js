@@ -1,6 +1,6 @@
 const MS_PER_HOUR = 60 * 60 * 1000;
 
-// The status boundaries, shared by health() and minutesUntil() so the two can
+// The status boundaries, shared by health() and secondsUntil() so the two can
 // never drift apart: above 66 = healthy, above 33 = thirsty, otherwise wilting.
 export const THRESHOLDS = { thirsty: 66, wilting: 33 };
 
@@ -21,9 +21,9 @@ export function health(lastWateredAt, waterIntervalHours, now = new Date(), time
   return { health: value, status };
 }
 
-// Real minutes until health() first reports `status` ('thirsty' or 'wilting');
+// Real seconds until health() first reports `status` ('thirsty' or 'wilting');
 // null if the plant is already there. Also pure, same arguments as health().
-export function minutesUntil(status, lastWateredAt, waterIntervalHours, now = new Date(), timeScale = 1) {
+export function secondsUntil(status, lastWateredAt, waterIntervalHours, now = new Date(), timeScale = 1) {
   // health() rounds before comparing, so e.g. 66.4 shows as 66 = thirsty.
   // The status therefore flips when the unrounded value drops below threshold + 0.5.
   const level = THRESHOLDS[status] + 0.5;
@@ -31,6 +31,6 @@ export function minutesUntil(status, lastWateredAt, waterIntervalHours, now = ne
   const gameHoursToLevel = 2 * waterIntervalHours * (1 - level / 100);
   // Game hours -> real hours: divide by the speed. Then subtract the time already passed.
   const realHoursLeft = gameHoursToLevel / timeScale - (now - lastWateredAt) / MS_PER_HOUR;
-  // Round up, so the last partial minute still shows as "1 minute" rather than 0.
-  return realHoursLeft > 0 ? Math.ceil(realHoursLeft * 60) : null;
+  // Round up, so the last partial second still counts as 1 rather than 0.
+  return realHoursLeft > 0 ? Math.ceil(realHoursLeft * 3600) : null;
 }
