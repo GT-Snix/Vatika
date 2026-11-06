@@ -12,10 +12,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))  # so `import lib` finds lib.py next to us
 import lib
 
-ROOT = Path(__file__).resolve().parent.parent
-GLB_PATH = ROOT / "client" / "public" / "models" / "tulsi.glb"
-PREVIEW_PATH = ROOT / "models-src" / "previews" / "tulsi.png"
-
 # (base x, base y, top x, top y, top height above soil, starting yaw in degrees)
 # One tall centre stem and four shorter ones leaning outward, like a bushy pot.
 STEMS = [
@@ -28,11 +24,6 @@ STEMS = [
 LEAF_NODES = [0.12, 0.28, 0.44, 0.60, 0.75, 0.88]  # where leaf pairs sit, as a fraction of stem length
 
 
-def lerp(a, b, t):
-    """Point a fraction t of the way from a to b."""
-    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
-
-
 def leaf_pairs(start, end, first_yaw):
     """Opposite leaf pairs; each pair is turned 90 degrees from the one below,
     which is how basil grows (and stops the pairs hiding each other)."""
@@ -42,7 +33,7 @@ def leaf_pairs(start, end, first_yaw):
         tilt = math.radians(20 + 35 * t)  # and point more upward
         mat = "leaf_dark" if i % 2 else "leaf"  # alternate shades so pairs read separately
         for side in (0, math.pi):  # opposite: the second leaf is 180 degrees round
-            lib.make_leaf(lerp(start, end, t), yaw + side, tilt, length, length * 0.8, mat)
+            lib.make_leaf(lib.lerp(start, end, t), yaw + side, tilt, length, length * 0.8, mat)
 
 
 def flower_spike(top, height):
@@ -52,7 +43,7 @@ def flower_spike(top, height):
     whorls = 4
     for w in range(whorls):
         t = (w + 0.5) / whorls
-        centre = lerp(top, tip, t)
+        centre = lib.lerp(top, tip, t)
         radius = 0.016 * (1 - 0.5 * t)
         for k in range(3):  # 3 buds around the stalk at each level
             a = k * 2 * math.pi / 3 + w * 0.6  # twist each level so buds don't line up
@@ -63,9 +54,8 @@ def flower_spike(top, height):
 def build():
     lib.clear_scene()
     lib.make_pot()
-    soil = lib.POT_HEIGHT
     for bx, by, tx, ty, h, yaw in STEMS:
-        start, end = (bx, by, lib.PLANT_BASE), (tx, ty, soil + h)
+        start, end = (bx, by, lib.PLANT_BASE), (tx, ty, lib.POT_HEIGHT + h)
         lib.make_stem(start, end)
         leaf_pairs(start, end, yaw)
         # Centre spike is longest so the plant tops out at about 0.8 m.
@@ -73,10 +63,4 @@ def build():
 
 
 build()
-print(f"TRIANGLES {lib.triangle_count()}")
-GLB_PATH.parent.mkdir(parents=True, exist_ok=True)
-PREVIEW_PATH.parent.mkdir(parents=True, exist_ok=True)
-plant = lib.export_glb(GLB_PATH)
-print(f"SIZE {tuple(round(d, 3) for d in plant.dimensions)} (x, y, z in metres; z = height)")
-lib.render_preview(PREVIEW_PATH)
-print(f"WROTE {GLB_PATH} and {PREVIEW_PATH}")
+lib.save_plant("tulsi")
