@@ -1,0 +1,63 @@
+/* The whole palette lives here as variables, so colours change in one place. */
+:root {
+  --bg: #f4efe6;
+  --card: #fffdf8;
+  --text: #2f2a22;
+  --muted: #7a7062;
+  --accent: #4f7a3a;      /* leaf green */
+  --accent-text: #ffffff;
+  --border: #e2d9c8;
+  --healthy: #4f7a3a;
+  --thirsty: #b7791f;
+  --wilting: #a63d2f;
+  --radius: 10px;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+
+h1 { margin: 0; font-size: 1.6rem; }
+.muted { color: var(--muted); }
+.error { color: var(--wilting); margin: 0; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Auth form: one column of fields. */
+.auth { display: flex; flex-direction: column; gap: 14px; }
+.auth p { margin: 0; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+input[type='email'], input[type='password'] {
+  padding: 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit;
+}
+fieldset { border: 1px solid var(--border); border-radius: 6px; display: grid; gap: 6px; }
+label.choice { flex-direction: row; align-items: center; gap: 8px; }
+
+button {
+  padding: 10px; border: none; border-radius: 6px; font: inherit; cursor: pointer;
+  background: var(--accent); color: var(--accent-text);
+}
+button:disabled { opacity: 0.6; cursor: default; }
+button.link { background: none; color: var(--accent); padding: 4px; }
+
+/* Garden list. */
+.garden { max-width: 560px; }
+.garden header { display: flex; justify-content: space-between; align-items: center; }
+.plants { list-style: none; padding: 0; margin: 12px 0 0; }
+.plants li {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.status { font-weight: 600; white-space: nowrap; }
+.status.healthy { color: var(--healthy); }
+.status.thirsty { color: var(--thirsty); }
+.status.wilting { color: var(--wilting); }
