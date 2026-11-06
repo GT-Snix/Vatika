@@ -21,8 +21,11 @@ model User {
 // The encyclopedia: one shared row per species, same for every user.
 model Plant {
   id                 Int         @id @default(autoincrement())
-  name               String
+  // @unique so the seed can upsert by name (and so a species can't be listed twice).
+  name               String      @unique
   botanicalName      String
+  habitat            String
+  partsUsed          String
   uses               String      @db.Text
   waterIntervalHours Int
   owners             UserPlant[]
