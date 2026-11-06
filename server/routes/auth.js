@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/db.js';
 import requireAuth from '../middleware/auth.js';
+import { SPEEDS, isValidSpeed } from '../lib/clock.js';
 
 const router = Router();
 
@@ -15,7 +16,8 @@ function cleanEmail(value) {
 // POST /auth/register -> create a user plus their starting garden
 router.post('/register', async (req, res) => {
   // 1. Read input. `|| {}` so a request with no body doesn't crash here.
-  const { password } = req.body || {};
+  // timeScale is optional: `= 1` applies only when it's missing, so a bad value still gets checked.
+  const { password, timeScale = 1 } = req.body || {};
   const email = cleanEmail(req.body?.email);
 
   // 2. Check input. typeof guards against e.g. { "password": 12345678 }.
@@ -25,6 +27,9 @@ router.post('/register', async (req, res) => {
   if (typeof password !== 'string' || password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
+  if (!isValidSpeed(timeScale)) {
+    return res.status(400).json({ error: `timeScale must be one of ${SPEEDS.map((s) => s.timeScale).join(', ')}` });
+  }
   const taken = await prisma.user.findUnique({ where: { email } });
   if (taken) return res.status(409).json({ error: 'Email already registered' });
 
@@ -32,7 +37,7 @@ router.post('/register', async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
   // All-or-nothing: if creating the garden fails, the user row is rolled back too.
   const user = await prisma.$transaction(async (tx) => {
-    const created = await tx.user.create({ data: { email, passwordHash } });
+    const created = await tx.user.create({ data: { email, passwordHash, timeScale } });
     const plants = await tx.plant.findMany();
     const now = new Date();
     await tx.userPlant.createMany({

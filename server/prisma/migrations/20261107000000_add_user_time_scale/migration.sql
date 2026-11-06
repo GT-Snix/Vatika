@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "timeScale" INTEGER NOT NULL DEFAULT 1;
+
