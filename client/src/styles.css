@@ -62,6 +62,8 @@ button.ghost, button.link {
 button.link { border: none; text-decoration: underline; font-weight: 400; }
 /* Keyboard users always see where they are; mouse clicks don't draw the ring. */
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* A dialog container is focused on open but isn't a control: rings belong to Tab stops only. */
+[role="dialog"]:focus { outline: none; }
 
 label { display: flex; flex-direction: column; gap: var(--s1); font-size: 0.9rem; }
 input[type='email'], input[type='password'] {

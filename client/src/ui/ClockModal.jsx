@@ -1,19 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import useDialog from './useDialog.js';
 
 // Pick a new game-clock speed. The list comes from the server (GET /garden `speeds`),
-// so this file never hardcodes which speeds exist. Keyboard: arrows pick, Enter confirms, Esc closes.
+// so this file never hardcodes which speeds exist. Keyboard (see useDialog): focus starts on the
+// modal itself; Tab reaches the speeds, then arrows pick, Enter confirms, Esc closes.
 export default function ClockModal({ speeds, current, onConfirm, onClose }) {
   const [choice, setChoice] = useState(current);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const firstRadio = useRef(null);
-
-  useEffect(() => {
-    firstRadio.current?.focus();
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const box = useDialog(onClose);
 
   async function handleSubmit(event) {
     event.preventDefault(); // a form, so Enter submits, but without reloading the page
@@ -30,13 +25,13 @@ export default function ClockModal({ speeds, current, onConfirm, onClose }) {
 
   return (
     <div className="backdrop">
-      <form className="glass modal" role="dialog" aria-modal="true" aria-labelledby="clock-title" onSubmit={handleSubmit}>
+      <form ref={box} tabIndex={-1} className="glass modal" role="dialog" aria-modal="true" aria-labelledby="clock-title" onSubmit={handleSubmit}>
         <h2 id="clock-title">Garden clock</h2>
         <fieldset>
           <legend className="muted">How fast time runs in your garden</legend>
-          {speeds.map((speed, i) => (
+          {speeds.map((speed) => (
             <label key={speed.timeScale} className="choice">
-              <input ref={i === 0 ? firstRadio : undefined} type="radio" name="speed"
+              <input type="radio" name="speed"
                 checked={choice === speed.timeScale} onChange={() => setChoice(speed.timeScale)} />
               {speed.label} ({speed.timeScale}x)
             </label>

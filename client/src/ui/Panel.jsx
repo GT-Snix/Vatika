@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { secondsLeft } from '../useGarden.js';
+import useDialog from './useDialog.js';
 
 // 100 -> "1m 40s"; 3725 -> "1h 2m"; 42 -> "42s".
 function formatDuration(totalSeconds) {
@@ -20,25 +21,19 @@ function countdownText(plant, now) {
   return 'needs water now';
 }
 
-// Inspect panel for one plant. Keyboard: focus starts on Water, Esc closes.
+// Inspect panel for one plant. Keyboard (see useDialog): focus starts on the panel itself,
+// Tab reaches Water and Close, Esc closes.
 export default function Panel({ plant, onWater, onClose }) {
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const waterButton = useRef(null);
+  const box = useDialog(onClose);
 
   // Tick once a second so the countdown moves between server re-syncs.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    waterButton.current?.focus();
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   async function handleWater() {
     setBusy(true);
@@ -53,7 +48,7 @@ export default function Panel({ plant, onWater, onClose }) {
   }
 
   return (
-    <aside className="glass panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+    <aside ref={box} tabIndex={-1} className="glass panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
       <header>
         <h2 id="panel-title">{plant.name}</h2>
         <p className="botanical">{plant.botanicalName}</p>
@@ -72,7 +67,7 @@ export default function Panel({ plant, onWater, onClose }) {
       </dl>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="actions">
-        <button ref={waterButton} type="button" onClick={handleWater} disabled={busy}>{busy ? 'Watering…' : 'Water'}</button>
+        <button type="button" onClick={handleWater} disabled={busy}>{busy ? 'Watering…' : 'Water'}</button>
         <button type="button" className="ghost" onClick={onClose}>Close</button>
       </div>
       <p className="footnote">Educational use only, not medical advice.</p>
