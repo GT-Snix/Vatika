@@ -5,3 +5,5 @@ generated
 __pycache__
 .claude/
 **/settings.local.json
+models-src/previews/*
+!models-src/previews/contact_sheet.png
