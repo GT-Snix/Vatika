@@ -13,7 +13,7 @@ import zlib
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 ROOT = Path(__file__).resolve().parent.parent  # the repo root
 TRIANGLE_BUDGET = 5000
@@ -54,6 +54,11 @@ PLANT_BASE = POT_HEIGHT - 0.01
 # seeds it from the plant's name, so each export is identical every run.
 rng = random.Random()
 
+# Names of the objects that make up the pot (body, rim, soil, pebbles, moss), noted by
+# start(). At export everything else counts as "plant", so the client can tint and tilt
+# the plant without touching the pot.
+pot_parts = set()
+
 
 def rgb(color):
     """Accept a palette name or an (r, g, b) tuple."""
@@ -76,6 +81,8 @@ def start(name, pot_style):
     rng.seed(zlib.crc32(name.encode()))
     make_pot(pot_style)
     soil_details()
+    pot_parts.clear()
+    pot_parts.update(o.name for o in bpy.data.objects)  # the scene holds only pot parts so far
 
 
 # ---------- material and colour ----------
@@ -367,23 +374,44 @@ def triangle_count():
                for o in bpy.data.objects if o.type == "MESH" for p in o.data.polygons)
 
 
-def export_glb(path):
-    """Join everything into one mesh, bake transforms, and write a GLB."""
-    meshes = [o for o in bpy.data.objects if o.type == "MESH"]
-    for o in meshes:
+def _join(objects, name):
+    """Merge objects into one mesh called `name`, with transforms baked into the vertices."""
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in objects:
         o.select_set(True)
-    bpy.context.view_layer.objects.active = meshes[0]
-    bpy.ops.object.join()  # one object + one material = one draw call in three.js
-    plant = bpy.context.object
-    plant.name = plant.data.name = Path(path).stem  # "tulsi", not the first part's name
-    # Apply = bake location/rotation/scale into the vertices, so the origin is the
-    # world origin (the pot base) and the GLB carries no leftover transforms.
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()  # one mesh + one material = one draw call in three.js
+    joined = bpy.context.object
+    joined.name = joined.data.name = name  # exact node names the client looks up
+    # Bake location/rotation/scale into the vertices, so its origin is the world origin
+    # (the pot base) and no leftover transforms are exported.
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    return joined
+
+
+def export_glb(path):
+    """Write a GLB shaped root -> "pot" + "plant", and return (pot, plant)."""
+    meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+    # Split into the two groups BEFORE joining: a join deletes the objects it merges,
+    # so filtering `meshes` afterwards would touch deleted objects.
+    pot_objects = [o for o in meshes if o.name in pot_parts]
+    plant_objects = [o for o in meshes if o.name not in pot_parts]
+    pot = _join(pot_objects, "pot")
+    plant = _join(plant_objects, "plant")
+    # Move the plant's origin up to the soil centre: shift its vertices down by the soil
+    # height and the object up by the same amount, so nothing moves on screen, but a
+    # rotation or squash of "plant" in the client pivots where the stems meet the soil.
+    plant.data.transform(Matrix.Translation((0, 0, -POT_HEIGHT)))
+    plant.location = (0, 0, POT_HEIGHT)
+    # An empty object as the root, at the pot base (world origin), named after the file.
+    root = bpy.data.objects.new(Path(path).stem, None)
+    bpy.context.collection.objects.link(root)
+    pot.parent = plant.parent = root
     # No textures, so UV coordinates would be dead weight; colours travel as COLOR_0.
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", export_yup=True,
                               export_apply=True, export_texcoords=False,
                               export_vertex_color="MATERIAL")
-    return plant
+    return pot, plant
 
 
 def render_preview(path, target_z=0.38):
@@ -423,6 +451,8 @@ def save_plant(name):
     png = ROOT / "models-src" / "previews" / f"{name}.png"
     glb.parent.mkdir(parents=True, exist_ok=True)
     png.parent.mkdir(parents=True, exist_ok=True)
-    plant = export_glb(glb)
-    print(f"SIZE {tuple(round(d, 3) for d in plant.dimensions)} (x, y, z in metres; z = height)")
+    pot, plant = export_glb(glb)
+    # Height of the whole model = the highest corner of either part, in world space.
+    top = max((o.matrix_world @ Vector(c)).z for o in (pot, plant) for c in o.bound_box)
+    print(f"SIZE height {top:.3f} m; plant origin at z={plant.location.z:.3f}")
     render_preview(png)
