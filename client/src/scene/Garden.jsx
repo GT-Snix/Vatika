@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PointerLockControls, Stats } from '@react-three/drei';
-import { EYE_HEIGHT, LAYOUT, PLINTH, WALK_RADIUS } from './layout.js';
+import { EYE_HEIGHT, LAYOUT, PATH_HALF_WIDTH, PATH_RADIUS } from './layout.js';
 import { palette } from './palette.js';
 import PlantModel from './PlantModel.jsx';
 import Player from './Player.jsx';
 
-// Read once: ?debug in the URL turns on the FPS meter.
+// Read once: ?debug in the URL turns on the FPS meter and the model-loading readout.
 const DEBUG = new URLSearchParams(window.location.search).has('debug');
-const PATH_RADIUS = 4.6; // the stone ring runs just inside the arc of plinths
 
 export default function Garden({ plants }) {
   const [locked, setLocked] = useState(false); // is the mouse captured for looking around?
+  // name -> 'loaded' | 'failed', reported by each PlantModel; only shown under ?debug.
+  const [models, setModels] = useState({});
+  const report = (status) => (name) => setModels((m) => ({ ...m, [name]: status }));
+  const failed = Object.keys(models).filter((name) => models[name] === 'failed');
 
   return (
     <div className="world">
@@ -47,7 +50,10 @@ export default function Garden({ plants }) {
         {plants.map((plant) => {
           const spot = LAYOUT[plant.name];
           if (!spot) return null; // a plant with no place in layout.js simply isn't drawn
-          return <Plinth key={plant.id} name={plant.name} {...spot} />;
+          return (
+            <Plinth key={plant.id} name={plant.name} spot={spot} debug={DEBUG}
+              onLoaded={report('loaded')} onFailed={report('failed')} />
+          );
         })}
 
         <PointerLockControls selector="#enter-garden" onLock={() => setLocked(true)} onUnlock={() => setLocked(false)} />
@@ -55,6 +61,12 @@ export default function Garden({ plants }) {
         {DEBUG && <Stats className="stats" />}
       </Canvas>
 
+      {DEBUG && (
+        <p className="debug">
+          models: {Object.values(models).filter((s) => s === 'loaded').length}/{plants.length} loaded
+          {failed.length > 0 && ` · failed: ${failed.join(', ')}`}
+        </p>
+      )}
       {!locked && (
         // Browsers only allow pointer lock in response to a click, hence this button.
         <button id="enter-garden" type="button" className="enter">
@@ -77,23 +89,24 @@ function Ground() {
       </mesh>
       {/* 1 cm above the grass, so the two never share a plane and flicker (z-fighting). */}
       <mesh position={[0, 0, 0.01]} receiveShadow>
-        <ringGeometry args={[PATH_RADIUS - 0.5, PATH_RADIUS + 0.5, 64]} />
+        <ringGeometry args={[PATH_RADIUS - PATH_HALF_WIDTH, PATH_RADIUS + PATH_HALF_WIDTH, 64]} />
         <meshStandardMaterial color={palette.path} />
       </mesh>
     </group>
   );
 }
 
-function Plinth({ name, position, scale }) {
-  const [x, y, z] = position;
+function Plinth({ name, spot, debug, onLoaded, onFailed }) {
+  const [x, y, z] = spot.position;
   return (
     <group position={[x, 0, z]}>
       <mesh position={[0, y / 2, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[PLINTH.radius, PLINTH.radius * 1.08, y, 8]} />
+        <cylinderGeometry args={[spot.plinthRadius, spot.plinthRadius * 1.08, y, 8]} />
         <meshStandardMaterial color={palette.plinth} flatShading />
       </mesh>
-      <group position={[0, y, 0]} scale={scale}>
-        <PlantModel name={name} />
+      {/* Pot base at the plinth top (y), turned to face the spawn, scaled to its target height. */}
+      <group position={[0, y, 0]} rotation={[0, spot.facing, 0]} scale={spot.scale}>
+        <PlantModel name={name} debug={debug} onLoaded={onLoaded} onFailed={onFailed} />
       </group>
     </group>
   );

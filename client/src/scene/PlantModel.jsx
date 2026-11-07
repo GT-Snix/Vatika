@@ -1,5 +1,6 @@
 import { Component, Suspense, useEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
+import { Box3, Vector3 } from 'three';
 import { palette } from './palette.js';
 
 // "Aloe Vera" -> /models/aloe_vera.glb (files live in client/public/models).
@@ -8,18 +9,20 @@ export function modelUrl(name) {
 }
 
 // One plant's GLB. Swap the file and nothing else changes.
-export default function PlantModel({ name }) {
+// onLoaded / onFailed let Garden count models for the ?debug readout.
+export default function PlantModel({ name, debug, onLoaded, onFailed }) {
+  const url = modelUrl(name);
   return (
-    <ModelErrorBoundary name={name}>
+    <ModelErrorBoundary url={url} onFailed={() => onFailed(name)}>
       {/* While the file downloads, show the placeholder instead of nothing. */}
       <Suspense fallback={<Placeholder />}>
-        <LoadedModel url={modelUrl(name)} />
+        <LoadedModel url={url} name={name} debug={debug} onLoaded={() => onLoaded(name)} />
       </Suspense>
     </ModelErrorBoundary>
   );
 }
 
-function LoadedModel({ url }) {
+function LoadedModel({ url, name, debug, onLoaded }) {
   // useGLTF caches by URL: every PlantModel asking for the same file shares ONE loaded copy.
   const { scene } = useGLTF(url);
 
@@ -36,8 +39,20 @@ function LoadedModel({ url }) {
     return clone;
   }, [scene]);
 
-  // Cloned materials are ours to free; the cached original stays for other plants.
-  useEffect(() => () => copy.traverse((obj) => obj.isMesh && obj.material.dispose()), [copy]);
+  useEffect(() => {
+    onLoaded();
+    if (debug) {
+      // `scene` (the cached original) isn't placed anywhere, so its box is the raw model size,
+      // to check against layout.js. `copy` is in the garden, so its box includes our scaling.
+      const raw = new Box3().setFromObject(scene).getSize(new Vector3());
+      const placed = new Box3().setFromObject(copy);
+      console.log(`[model] ${name}: raw ${raw.x.toFixed(3)} x ${raw.y.toFixed(3)} x ${raw.z.toFixed(3)} m (w x h x d);`
+        + ` placed: base y=${placed.min.y.toFixed(3)}, top y=${placed.max.y.toFixed(3)}`);
+    }
+    // Cloned materials are ours to free; the cached original stays for other plants.
+    return () => copy.traverse((obj) => obj.isMesh && obj.material.dispose());
+    // Only re-run when the model itself changes, not when the parent passes new callbacks.
+  }, [copy]);
 
   return <primitive object={copy} />;
 }
@@ -59,7 +74,7 @@ function Placeholder() {
 }
 
 // A missing or broken file makes useGLTF throw; this catches it so one bad model shows the
-// placeholder instead of crashing the whole scene. React only offers this as a class component.
+// placeholder instead of blanking the whole scene. React only offers this as a class component.
 // (Alternative: the react-error-boundary package, but that's a dependency for ten lines.)
 class ModelErrorBoundary extends Component {
   state = { failed: false };
@@ -69,7 +84,9 @@ class ModelErrorBoundary extends Component {
   }
 
   componentDidCatch(error) {
-    console.warn(`Could not load the model for ${this.props.name}; showing a placeholder.`, error);
+    // Loud on purpose: the exact URL, so a typo'd or missing file is obvious in the console.
+    console.error(`Model failed to load: ${this.props.url}`, error);
+    this.props.onFailed();
   }
 
   render() {

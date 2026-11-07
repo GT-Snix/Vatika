@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
-import { EYE_HEIGHT, LAYOUT, PLAYER_RADIUS, PLINTH, WALK_RADIUS } from './layout.js';
+import { EYE_HEIGHT, LAYOUT, WALK_RADIUS } from './layout.js';
 
+// 3 m/s with frame time capped at 0.1 s means at most 0.3 m per frame: far less than the
+// smallest collision circle (1.4 m across), so a fast step can never jump clean over one.
 const SPEED = 3; // metres per second, a relaxed walk
-const BLOCK_RADIUS = PLINTH.radius + PLAYER_RADIUS; // closest the player's centre may get to a plinth's
-const PLINTHS = Object.values(LAYOUT).map(({ position: [x, , z] }) => ({ x, z }));
+// Each plinth's centre and how close the player's centre may get to it (set in layout.js).
+const PLINTHS = Object.values(LAYOUT).map(({ position: [x, , z], blockRadius }) => ({ x, z, r: blockRadius }));
 
 // Keep the player inside the garden and outside every plinth. Returns the corrected [x, z].
 function collide(x, z) {
@@ -20,9 +22,9 @@ function collide(x, z) {
     const dx = x - p.x;
     const dz = z - p.z;
     const d = Math.hypot(dx, dz);
-    if (d < BLOCK_RADIUS && d > 0) {
-      x = p.x + (dx / d) * BLOCK_RADIUS;
-      z = p.z + (dz / d) * BLOCK_RADIUS;
+    if (d < p.r && d > 0) {
+      x = p.x + (dx / d) * p.r;
+      z = p.z + (dz / d) * p.r;
     }
   }
   return [x, z];
