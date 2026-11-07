@@ -5,8 +5,16 @@ export const palette = {
   ground: '#8fae6b',     // grass
   path: '#c9bda8',       // pale stone
   plinth: '#b8ab95',
+  plinthGlow: '#5a4a2a', // added as emissive light to the targeted plinth: a subtle warm lift
   sun: '#fff1d6',        // warm white
   hemiSky: '#dfeefa',    // light from above...
   hemiGround: '#7c6a4f', // ...and warm bounce from the earth below
   placeholder: '#a39a8a',
+};
+
+// Multiplied into each plant's vertex colours, so white = unchanged.
+export const statusTint = {
+  healthy: '#ffffff',
+  thirsty: '#ffe39a', // warm yellow
+  wilting: '#c79a5b', // brown-yellow
 };

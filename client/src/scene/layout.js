@@ -8,6 +8,14 @@ export const PLAYER_RADIUS = 0.35; // how "wide" the player is, for bumping into
 export const PATH_RADIUS = 3.7; // centre line of the stone ring, inside the plinths
 export const PATH_HALF_WIDTH = 0.4;
 
+// Targeting (scene/Targeting.jsx): a plant can be inspected when it is this close on the
+// ground and this close to straight ahead.
+export const TARGET_RANGE = 3.2;
+export const TARGET_ANGLE_DEGREES = 18;
+// The pot's bottom radius in model units (models-src/lib.py): a wilting plant tips
+// over this front edge, so the pot never sinks into its plinth.
+export const POT_BASE_RADIUS = 0.13;
+
 const ARC_RADIUS = 4.8; // distance from spawn to each plinth centre
 const ARC_DEGREES = 200; // spread of the arc: about 2.4 m between neighbours
 const POT_RIM_RADIUS = 0.185; // every model shares the same pot (models-src/lib.py)

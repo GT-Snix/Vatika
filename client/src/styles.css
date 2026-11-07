@@ -1,83 +1,151 @@
-/* The whole palette lives here as variables, so colours change in one place. */
+/* ONE palette, as variables: warm herbal colours, light text on dark glass. */
 :root {
-  --bg: #f4efe6;
-  --card: #fffdf8;
-  --text: #2f2a22;
-  --muted: #7a7062;
-  --accent: #4f7a3a;      /* leaf green */
-  --accent-text: #ffffff;
-  --border: #e2d9c8;
-  --healthy: #4f7a3a;
-  --thirsty: #b7791f;
-  --wilting: #a63d2f;
-  --radius: 10px;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  --ink: #f4efe2;            /* main text: warm off-white */
+  --ink-muted: #c9c1ad;
+  --glass: rgba(26, 32, 22, 0.78);  /* dark mossy panel, see-through */
+  --glass-edge: rgba(244, 239, 226, 0.16);
+  --leaf: #8fbf6a;           /* primary action */
+  --leaf-ink: #15200f;       /* text on leaf-green buttons */
+  --turmeric: #e2b44f;
+  --clay: #c0703f;
+  --healthy: var(--leaf);
+  --thirsty: var(--turmeric);
+  --wilting: var(--clay);
+  --focus: #ffd98a;          /* focus ring: bright enough on glass and on the 3D scene */
+  --backdrop: linear-gradient(160deg, #2c3a24, #4a5a33 55%, #6b5a36);
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* One spacing scale, used everywhere. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --radius: 12px;
+  --tap: 44px;               /* minimum height/width of anything clickable */
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--backdrop);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: var(--s4); background: var(--backdrop); }
+h1, h2 { font-family: var(--font-display); font-weight: 600; margin: 0; }
+h1 { font-size: 1.9rem; }
+h2 { font-size: 1.5rem; }
+p { margin: 0; }
+.muted { color: var(--ink-muted); }
+.error { color: #ffb4a0; }
 
-h1 { margin: 0; font-size: 1.6rem; }
-.muted { color: var(--muted); }
-.error { color: var(--wilting); margin: 0; }
-
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
+/* Dark see-through panel used by every overlay. */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
   border-radius: var(--radius);
-  padding: 24px;
-  width: 100%;
-  max-width: 420px;
+  backdrop-filter: blur(10px); /* frosted glass over the 3D scene */
+  color: var(--ink);
 }
 
-/* Auth form: one column of fields. */
-.auth { display: flex; flex-direction: column; gap: 14px; }
-.auth p { margin: 0; }
-label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
-input[type='email'], input[type='password'] {
-  padding: 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit;
-}
-fieldset { border: 1px solid var(--border); border-radius: 6px; display: grid; gap: 6px; }
-label.choice { flex-direction: row; align-items: center; gap: 8px; }
-
+/* ---------- controls ---------- */
 button {
-  padding: 10px; border: none; border-radius: 6px; font: inherit; cursor: pointer;
-  background: var(--accent); color: var(--accent-text);
+  min-height: var(--tap); min-width: var(--tap); padding: 0 var(--s4);
+  border: none; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer;
+  background: var(--leaf); color: var(--leaf-ink);
 }
-button:disabled { opacity: 0.6; cursor: default; }
-button.link { background: none; color: var(--accent); padding: 4px; }
+button:disabled { opacity: 0.55; cursor: default; }
+button.ghost, button.link {
+  background: transparent; color: var(--ink); border: 1px solid var(--glass-edge);
+}
+button.link { border: none; text-decoration: underline; font-weight: 400; }
+/* Keyboard users always see where they are; mouse clicks don't draw the ring. */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-/* Status colours (used by the plant info panel in the next stage). */
-.status { font-weight: 600; white-space: nowrap; }
-.status.healthy { color: var(--healthy); }
-.status.thirsty { color: var(--thirsty); }
-.status.wilting { color: var(--wilting); }
+label { display: flex; flex-direction: column; gap: var(--s1); font-size: 0.9rem; }
+input[type='email'], input[type='password'] {
+  min-height: var(--tap); padding: 0 var(--s3); font: inherit; color: var(--ink);
+  background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-edge); border-radius: 8px;
+}
+fieldset { border: 1px solid var(--glass-edge); border-radius: 8px; display: grid; gap: var(--s1); padding: var(--s3); margin: 0; }
+legend { padding: 0 var(--s1); }
+label.choice { flex-direction: row; align-items: center; gap: var(--s2); min-height: var(--tap); cursor: pointer; }
+input[type='radio'] { width: 20px; height: 20px; accent-color: var(--leaf); }
 
-/* 3D garden: the canvas fills the whole window, underneath the HUD and the enter button. */
+/* ---------- login card ---------- */
+.card {
+  width: 100%; max-width: 420px; padding: var(--s5);
+  display: flex; flex-direction: column; gap: var(--s3);
+  background: var(--glass); border: 1px solid var(--glass-edge); border-radius: var(--radius);
+}
+
+/* ---------- 3D garden and HUD ---------- */
 .world { position: fixed; inset: 0; }
 .hud {
-  position: fixed; top: 16px; left: 16px; right: 16px;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  position: fixed; top: var(--s4); left: var(--s4); right: var(--s4);
+  display: flex; justify-content: space-between; align-items: center; gap: var(--s3);
   pointer-events: none; /* clicks pass through to the scene... */
 }
-.hud > * { pointer-events: auto; } /* ...except on the HUD's own text and button */
-.hud span {
-  background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+.hud > *, .hud-group > * { pointer-events: auto; } /* ...except on the HUD's own controls */
+.hud-group { display: flex; gap: var(--s2); align-items: center; }
+.hud button.ghost { background: var(--glass); }
+.pill { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--s3); }
+
+/* Crosshair and hint, centred; never clickable so they can't interfere with the game. */
+.aim { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.crosshair {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
+.crosshair.on { border-color: var(--turmeric); transform: scale(1.4); }
+.hint { position: absolute; top: calc(50% + 28px); padding: var(--s2) var(--s3); }
+kbd {
+  font: inherit; font-weight: 600; padding: 0 6px; border-radius: 4px;
+  border: 1px solid var(--glass-edge); background: rgba(255, 255, 255, 0.08);
+}
+
 .enter {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  display: flex; flex-direction: column; gap: 6px; align-items: center;
-  padding: 18px 28px; font-size: 1.2rem;
+  display: flex; flex-direction: column; gap: var(--s1); align-items: center;
+  padding: var(--s4) var(--s5); font-size: 1.2rem; color: var(--ink);
 }
-.enter small { font-size: 0.8rem; opacity: 0.85; }
+.enter small { font-size: 0.8rem; font-weight: 400; color: var(--ink-muted); }
 
-/* drei's FPS meter pins itself top-left with inline styles; move it under the HUD's way. */
+/* ---------- inspect panel ---------- */
+.panel {
+  position: fixed; top: 50%; right: var(--s4); transform: translateY(-50%);
+  width: min(380px, calc(100vw - 2 * var(--s4))); max-height: calc(100vh - 2 * var(--s4)); overflow-y: auto;
+  padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3);
+}
+.botanical { font-style: italic; color: var(--ink-muted); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; }
+.chip {
+  padding: var(--s1) var(--s3); border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+  text-transform: capitalize; color: var(--leaf-ink);
+}
+.chip.healthy, .fill.healthy { background: var(--healthy); }
+.chip.thirsty, .fill.thirsty { background: var(--thirsty); }
+.chip.wilting, .fill.wilting { background: var(--wilting); }
+.countdown { font-variant-numeric: tabular-nums; } /* digits same width, so the text doesn't wobble */
+.bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.fill { height: 100%; transition: width 0.4s ease; }
+dl { margin: 0; display: grid; gap: var(--s1); }
+dt { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-top: var(--s2); }
+dd { margin: 0; line-height: 1.45; }
+.actions { display: flex; gap: var(--s2); }
+.actions button { flex: 1; }
+.footnote { font-size: 0.75rem; color: var(--ink-muted); }
+
+/* ---------- clock modal ---------- */
+.backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: var(--s4); background: rgba(0, 0, 0, 0.35); }
+.modal { width: min(400px, 100%); padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); }
+.warning { color: var(--turmeric); }
+
+/* ---------- ?debug ---------- */
+/* drei's FPS meter pins itself top-left with inline styles; move it out of the HUD's way. */
 .stats { top: auto !important; bottom: 0 !important; }
-
-/* ?debug readout: which models loaded. Sits just above the FPS meter. */
 .debug {
-  position: fixed; left: 0; bottom: 48px; margin: 0; padding: 4px 8px;
+  position: fixed; left: 0; bottom: 48px; margin: 0; padding: var(--s1) var(--s2);
   background: rgba(0, 0, 0, 0.7); color: #fff; font: 12px/1.4 ui-monospace, monospace;
 }

@@ -1,7 +1,17 @@
-import { Component, Suspense, useEffect, useMemo } from 'react';
+import { Component, Suspense, useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { Box3, Vector3 } from 'three';
-import { palette } from './palette.js';
+import { Box3, Color, Vector3 } from 'three';
+import { POT_BASE_RADIUS } from './layout.js';
+import { palette, statusTint } from './palette.js';
+
+// How each status looks. tilt leans the plant toward the viewer; scaleY squashes it a
+// little, but never below 0.94 because the pot is part of the same model.
+const LOOK = {
+  healthy: { tilt: 0, scaleY: 1, color: new Color(statusTint.healthy) },
+  thirsty: { tilt: (4 * Math.PI) / 180, scaleY: 0.97, color: new Color(statusTint.thirsty) },
+  wilting: { tilt: (10 * Math.PI) / 180, scaleY: 0.94, color: new Color(statusTint.wilting) },
+};
 
 // "Aloe Vera" -> /models/aloe_vera.glb (files live in client/public/models).
 export function modelUrl(name) {
@@ -10,34 +20,48 @@ export function modelUrl(name) {
 
 // One plant's GLB. Swap the file and nothing else changes.
 // onLoaded / onFailed let Garden count models for the ?debug readout.
-export default function PlantModel({ name, debug, onLoaded, onFailed }) {
+export default function PlantModel({ name, status, debug, onLoaded, onFailed }) {
   const url = modelUrl(name);
   return (
     <ModelErrorBoundary url={url} onFailed={() => onFailed(name)}>
       {/* While the file downloads, show the placeholder instead of nothing. */}
       <Suspense fallback={<Placeholder />}>
-        <LoadedModel url={url} name={name} debug={debug} onLoaded={() => onLoaded(name)} />
+        <LoadedModel url={url} name={name} status={status} debug={debug} onLoaded={() => onLoaded(name)} />
       </Suspense>
     </ModelErrorBoundary>
   );
 }
 
-function LoadedModel({ url, name, debug, onLoaded }) {
+function LoadedModel({ url, name, status, debug, onLoaded }) {
   // useGLTF caches by URL: every PlantModel asking for the same file shares ONE loaded copy.
   const { scene } = useGLTF(url);
 
   // So each plant gets its own copy of the objects AND their materials. Without this,
   // tinting one plant's material (Stage C) would tint every plant sharing it.
-  const copy = useMemo(() => {
+  const { copy, materials } = useMemo(() => {
     const clone = scene.clone(true);
+    const mats = [];
     clone.traverse((obj) => {
       if (!obj.isMesh) return;
       obj.material = obj.material.clone();
+      mats.push(obj.material);
       obj.castShadow = true;
       obj.receiveShadow = true; // leaves shade the pot and each other
     });
-    return clone;
+    return { copy: clone, materials: mats };
   }, [scene]);
+
+  // Ease toward the look for the current status a little every frame, so a change of
+  // status fades in instead of snapping. 1 - e^(-3 * delta) gives the same speed at any fps.
+  const tiltRef = useRef();
+  useFrame((_, delta) => {
+    const look = LOOK[status] || LOOK.healthy;
+    const k = 1 - Math.exp(-3 * delta);
+    const g = tiltRef.current;
+    g.rotation.x += (look.tilt - g.rotation.x) * k;
+    g.scale.y += (look.scaleY - g.scale.y) * k;
+    for (const m of materials) m.color.lerp(look.color, k); // material colour x vertex colours
+  });
 
   useEffect(() => {
     onLoaded();
@@ -54,7 +78,15 @@ function LoadedModel({ url, name, debug, onLoaded }) {
     // Only re-run when the model itself changes, not when the parent passes new callbacks.
   }, [copy]);
 
-  return <primitive object={copy} />;
+  // Tilt around the pot's FRONT base edge (+Z faces the viewer), so leaning forward lifts
+  // the back of the pot a little instead of pushing the front down into the plinth.
+  return (
+    <group position={[0, 0, POT_BASE_RADIUS]}>
+      <group ref={tiltRef}>
+        <primitive object={copy} position={[0, 0, -POT_BASE_RADIUS]} />
+      </group>
+    </group>
+  );
 }
 
 // Stand-in pot + bush, shown while loading or if the model can't be loaded.
