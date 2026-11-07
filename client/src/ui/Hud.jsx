@@ -17,7 +17,7 @@ export default function Hud({ speedLabel, timeScale, time, locked, targetName, o
       {locked && (
         <div className="aim" aria-hidden="true">
           <div className={targetName ? 'crosshair on' : 'crosshair'} />
-          {targetName && <p className="glass hint">Press <kbd>E</kbd> to inspect {targetName}</p>}
+          {targetName && <p className="glass hint">{targetName} · <kbd>E</kbd> inspect · <kbd>F</kbd> water</p>}
         </div>
       )}
     </>

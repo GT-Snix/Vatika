@@ -18,6 +18,7 @@ export default function App() {
   const [targetId, setTargetId] = useState(null); // plant in front of the player, if any
   const [inspectId, setInspectId] = useState(null); // plant whose panel is open
   const [clockOpen, setClockOpen] = useState(false);
+  const [perk, setPerk] = useState(null); // { plantId, at }: the last plant watered with the can
   const paused = inspectId !== null || clockOpen; // a panel or modal is open
 
   // Let api.js send us back to the login screen when the server rejects the token.
@@ -37,6 +38,13 @@ export default function App() {
   // Stable functions, so the panel's and modal's key listeners aren't re-added every render.
   const closePanel = useCallback(() => setInspectId(null), []);
   const closeClock = useCallback(() => setClockOpen(false), []);
+
+  // F-key pour finished on a plant: same water action as the panel's button, then a perk-up.
+  function waterFromCan(plantId) {
+    water(plantId)
+      .then(() => setPerk({ plantId, at: performance.now() }))
+      .catch((err) => console.error(`Watering plant ${plantId} failed:`, err.message));
+  }
 
   function logOut() {
     setToken(null);
@@ -58,6 +66,7 @@ export default function App() {
   return (
     <>
       <Garden plants={garden.plants} sky={sky} locked={locked} paused={paused} targetId={targetId}
+        perk={perk} onWatered={waterFromCan}
         onLock={() => setLocked(true)} onUnlock={() => setLocked(false)} onTarget={setTargetId} />
       <Hud speedLabel={speed ? speed.label : ''} timeScale={garden.timeScale} time={formatHour(sky.hour)} locked={locked && !paused}
         targetName={byId(targetId)?.name} onOpenClock={() => setClockOpen(true)} onLogOut={logOut} />

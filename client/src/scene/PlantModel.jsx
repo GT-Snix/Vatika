@@ -21,19 +21,19 @@ export function modelUrl(name) {
 
 // One plant's GLB. Swap the file and nothing else changes.
 // onLoaded / onFailed let Garden count models for the ?debug readout.
-export default function PlantModel({ name, status, debug, onLoaded, onFailed }) {
+export default function PlantModel({ name, status, perkAt, debug, onLoaded, onFailed }) {
   const url = modelUrl(name);
   return (
     <ModelErrorBoundary url={url} onFailed={() => onFailed(name)}>
       {/* While the file downloads, show the placeholder instead of nothing. */}
       <Suspense fallback={<Placeholder />}>
-        <LoadedModel url={url} name={name} status={status} debug={debug} onLoaded={() => onLoaded(name)} />
+        <LoadedModel url={url} name={name} status={status} perkAt={perkAt} debug={debug} onLoaded={() => onLoaded(name)} />
       </Suspense>
     </ModelErrorBoundary>
   );
 }
 
-function LoadedModel({ url, name, status, debug, onLoaded }) {
+function LoadedModel({ url, name, status, perkAt, debug, onLoaded }) {
   // useGLTF caches by URL: every PlantModel asking for the same file shares ONE loaded copy.
   const { scene } = useGLTF(url);
 
@@ -60,12 +60,17 @@ function LoadedModel({ url, name, status, debug, onLoaded }) {
   // Without a "plant" node (an older single-mesh model) the whole model moves instead,
   // using the wrapper group below.
   const tiltRef = useRef();
+  const droop = useRef(1); // eased height, kept apart from the perk pulse below
   useFrame((_, delta) => {
     const look = LOOK[status] || LOOK.healthy;
     const k = 1 - Math.exp(-3 * delta);
     const g = plantNode || tiltRef.current;
     g.rotation.x += (look.tilt - g.rotation.x) * k;
-    g.scale.y += (look.scaleY - g.scale.y) * k;
+    droop.current += (look.scaleY - droop.current) * k;
+    // Perk-up after watering: a quick 12% swell and back over 0.6 s (half a sine wave).
+    const since = perkAt ? (performance.now() - perkAt) / 1000 : 1;
+    const pulse = since < 0.6 ? 1 + 0.12 * Math.sin((Math.PI * since) / 0.6) : 1;
+    g.scale.set(pulse, droop.current * pulse, pulse);
     for (const m of tinted) m.color.lerp(look.color, k); // material colour x vertex colours
   });
 
@@ -119,7 +124,8 @@ function Placeholder() {
 // A missing or broken file makes useGLTF throw; this catches it so one bad model shows the
 // placeholder instead of blanking the whole scene. React only offers this as a class component.
 // (Alternative: the react-error-boundary package, but that's a dependency for ten lines.)
-class ModelErrorBoundary extends Component {
+// Also used for the player rig, with fallback={null}.
+export class ModelErrorBoundary extends Component {
   state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -129,10 +135,11 @@ class ModelErrorBoundary extends Component {
   componentDidCatch(error) {
     // Loud on purpose: the exact URL, so a typo'd or missing file is obvious in the console.
     console.error(`Model failed to load: ${this.props.url}`, error);
-    this.props.onFailed();
+    this.props.onFailed?.();
   }
 
   render() {
-    return this.state.failed ? <Placeholder /> : this.props.children;
+    const fallback = this.props.fallback === undefined ? <Placeholder /> : this.props.fallback;
+    return this.state.failed ? fallback : this.props.children;
   }
 }

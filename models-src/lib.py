@@ -41,6 +41,14 @@ PALETTE = {
     "bract_green": (0.70, 0.82, 0.52),  # Turmeric flower spike, lower bracts
     "bract_pink":  (0.86, 0.45, 0.62),  # ... and its pink tip
     "aloe_tooth":  (0.82, 0.86, 0.68),
+    # The gardener (models-src/player.py).
+    "glove":       (0.84, 0.62, 0.30),  # tan suede gardening glove
+    "glove_cuff":  (0.42, 0.55, 0.30),  # green cuff
+    "sleeve":      (0.62, 0.66, 0.52),  # sage linen
+    "can":         (0.28, 0.48, 0.44),  # painted teal metal
+    "can_dark":    (0.20, 0.34, 0.31),
+    "boot":        (0.30, 0.20, 0.12),
+    "sole":        (0.14, 0.11, 0.09),
 }
 GREENS = ["leaf_deep", "leaf_mid", "leaf_light", "leaf_new"]
 GREEN_WEIGHTS = [3, 4, 3, 1]  # new growth is the rarest
@@ -74,11 +82,16 @@ def random_green():
     return rng.choices(GREENS, weights=GREEN_WEIGHTS)[0]
 
 
-def start(name, pot_style):
-    """Empty scene, seed the randomness from the name, and set up the pot."""
+def begin(name):
+    """Empty scene and randomness seeded from the name (same model every run)."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     # crc32, not hash(): Python's hash() of a string changes every run.
     rng.seed(zlib.crc32(name.encode()))
+
+
+def start(name, pot_style):
+    """begin(), then the pot every plant stands in."""
+    begin(name)
     make_pot(pot_style)
     soil_details()
     pot_parts.clear()
@@ -201,11 +214,11 @@ def soil_details():
 
 # ---------- stems ----------
 
-def make_stem(start, end, radius=0.008, color="stem"):
-    """Thin 5-sided cylinder from point start to point end."""
+def make_stem(start, end, radius=0.008, color="stem", sides=5):
+    """Thin cylinder (5 sides unless asked) from point start to point end."""
     start, end = Vector(start), Vector(end)
     direction = end - start
-    bpy.ops.mesh.primitive_cylinder_add(vertices=5, radius=radius, depth=direction.length,
+    bpy.ops.mesh.primitive_cylinder_add(vertices=sides, radius=radius, depth=direction.length,
                                         location=(start + end) / 2)
     obj = bpy.context.object
     # Cylinders are built along Z; turn Z to point along the stem.
