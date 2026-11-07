@@ -5,8 +5,9 @@ import { Box3, Color, Vector3 } from 'three';
 import { POT_BASE_RADIUS } from './layout.js';
 import { palette, statusTint } from './palette.js';
 
-// How each status looks. tilt leans the plant toward the viewer; scaleY squashes it a
-// little, but never below 0.94 because the pot is part of the same model.
+// How each status looks. tilt leans the plant toward the viewer; scaleY droops it a
+// little, never below 0.94 so it never looks crushed. Applied to the model's "plant"
+// node only, so the pot keeps its colour and stays upright on the plinth.
 const LOOK = {
   healthy: { tilt: 0, scaleY: 1, color: new Color(statusTint.healthy) },
   thirsty: { tilt: (4 * Math.PI) / 180, scaleY: 0.97, color: new Color(statusTint.thirsty) },
@@ -37,38 +38,47 @@ function LoadedModel({ url, name, status, debug, onLoaded }) {
   const { scene } = useGLTF(url);
 
   // So each plant gets its own copy of the objects AND their materials. Without this,
-  // tinting one plant's material (Stage C) would tint every plant sharing it.
-  const { copy, materials } = useMemo(() => {
+  // tinting one plant's material would tint every plant sharing it.
+  const { copy, plantNode, tinted } = useMemo(() => {
     const clone = scene.clone(true);
-    const mats = [];
     clone.traverse((obj) => {
       if (!obj.isMesh) return;
       obj.material = obj.material.clone();
-      mats.push(obj.material);
       obj.castShadow = true;
       obj.receiveShadow = true; // leaves shade the pot and each other
     });
-    return { copy: clone, materials: mats };
+    // The models are root -> "pot" + "plant" (models-src/lib.py). The plant node's origin
+    // is the soil centre, so rotating or scaling it pivots exactly where the stems start.
+    const plant = clone.getObjectByName('plant') || null;
+    const mats = [];
+    (plant || clone).traverse((obj) => obj.isMesh && mats.push(obj.material));
+    return { copy: clone, plantNode: plant, tinted: mats };
   }, [scene]);
 
   // Ease toward the look for the current status a little every frame, so a change of
   // status fades in instead of snapping. 1 - e^(-3 * delta) gives the same speed at any fps.
+  // Without a "plant" node (an older single-mesh model) the whole model moves instead,
+  // using the wrapper group below.
   const tiltRef = useRef();
   useFrame((_, delta) => {
     const look = LOOK[status] || LOOK.healthy;
     const k = 1 - Math.exp(-3 * delta);
-    const g = tiltRef.current;
+    const g = plantNode || tiltRef.current;
     g.rotation.x += (look.tilt - g.rotation.x) * k;
     g.scale.y += (look.scaleY - g.scale.y) * k;
-    for (const m of materials) m.color.lerp(look.color, k); // material colour x vertex colours
+    for (const m of tinted) m.color.lerp(look.color, k); // material colour x vertex colours
   });
 
   useEffect(() => {
     onLoaded();
+    if (!plantNode) console.warn(`${name}: model has no "plant" node; tinting and tilting the whole model, pot included.`);
     if (debug) {
       // `scene` (the cached original) isn't placed anywhere, so its box is the raw model size,
       // to check against layout.js. `copy` is in the garden, so its box includes our scaling.
       const raw = new Box3().setFromObject(scene).getSize(new Vector3());
+      // Before the first frame renders, the parents' positions aren't applied yet; this
+      // updates them, or "placed" would report the model's own (unplaced) coordinates.
+      copy.updateWorldMatrix(true, true);
       const placed = new Box3().setFromObject(copy);
       console.log(`[model] ${name}: raw ${raw.x.toFixed(3)} x ${raw.y.toFixed(3)} x ${raw.z.toFixed(3)} m (w x h x d);`
         + ` placed: base y=${placed.min.y.toFixed(3)}, top y=${placed.max.y.toFixed(3)}`);
@@ -78,8 +88,9 @@ function LoadedModel({ url, name, status, debug, onLoaded }) {
     // Only re-run when the model itself changes, not when the parent passes new callbacks.
   }, [copy]);
 
-  // Tilt around the pot's FRONT base edge (+Z faces the viewer), so leaning forward lifts
-  // the back of the pot a little instead of pushing the front down into the plinth.
+  // Fallback only: tilt the whole model around the pot's FRONT base edge (+Z faces the viewer),
+  // so leaning forward lifts the back of the pot instead of pushing the front into the plinth.
+  // With a "plant" node these groups never move and cancel out.
   return (
     <group position={[0, 0, POT_BASE_RADIUS]}>
       <group ref={tiltRef}>
