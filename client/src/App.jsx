@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getToken, setToken, setOnLoggedOut } from './api.js';
 import useGarden from './useGarden.js';
+import useSkyTime, { formatHour } from './scene/useSkyTime.js';
 import AuthScreen from './auth/AuthScreen.jsx';
 import Garden from './scene/Garden.jsx';
 import Hud from './ui/Hud.jsx';
@@ -11,6 +12,8 @@ export default function App() {
   // Start logged in if a token survived from last time; the first /garden call checks it.
   const [loggedIn, setLoggedIn] = useState(() => Boolean(getToken()));
   const { garden, error, water, changeClock } = useGarden(loggedIn);
+  // Time of day runs at the user's clock speed (1x until the garden has loaded).
+  const sky = useSkyTime(garden ? garden.timeScale : 1);
   const [locked, setLocked] = useState(false); // mouse captured = walking around
   const [targetId, setTargetId] = useState(null); // plant in front of the player, if any
   const [inspectId, setInspectId] = useState(null); // plant whose panel is open
@@ -54,9 +57,9 @@ export default function App() {
   const speed = garden.speeds.find((s) => s.timeScale === garden.timeScale);
   return (
     <>
-      <Garden plants={garden.plants} locked={locked} paused={paused} targetId={targetId}
+      <Garden plants={garden.plants} sky={sky} locked={locked} paused={paused} targetId={targetId}
         onLock={() => setLocked(true)} onUnlock={() => setLocked(false)} onTarget={setTargetId} />
-      <Hud speedLabel={speed ? speed.label : ''} timeScale={garden.timeScale} locked={locked && !paused}
+      <Hud speedLabel={speed ? speed.label : ''} timeScale={garden.timeScale} time={formatHour(sky.hour)} locked={locked && !paused}
         targetName={byId(targetId)?.name} onOpenClock={() => setClockOpen(true)} onLogOut={logOut} />
       {inspectId !== null && byId(inspectId) && <Panel plant={byId(inspectId)} onWater={water} onClose={closePanel} />}
       {clockOpen && (

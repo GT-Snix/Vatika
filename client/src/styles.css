@@ -148,4 +148,7 @@ dd { margin: 0; line-height: 1.45; }
 .debug {
   position: fixed; left: 0; bottom: 48px; margin: 0; padding: var(--s1) var(--s2);
   background: rgba(0, 0, 0, 0.7); color: #fff; font: 12px/1.4 ui-monospace, monospace;
+  display: grid; gap: var(--s1);
 }
+.debug label { flex-direction: row; align-items: center; gap: var(--s2); font: inherit; }
+.debug input[type='range'] { width: 200px; min-height: var(--tap); }

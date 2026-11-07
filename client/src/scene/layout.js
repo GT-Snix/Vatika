@@ -49,7 +49,7 @@ const PLANTS = [
 // Tiny seeded random generator (mulberry32): the same seed gives the same "random"
 // numbers every load, so the garden never reshuffles. (Alternative: Math.random(),
 // which would turn the plants differently on every page load.)
-function seededRandom(seed) {
+export function seededRandom(seed) {
   return () => {
     seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
