@@ -1,0 +1,18 @@
+# Netlify config for the vatika-garden site. Deployed from this folder by hand:
+#   (cd ../server && npm run build:function) && npm run build && netlify deploy --prod --no-build
+[build]
+  publish = "dist"
+  # The Express API (server/app.js) wrapped as one function, pre-bundled as an
+  # ES module by `npm run build:function` (Netlify's own esbuild step outputs
+  # CommonJS, which breaks import.meta in lib/env.js and the Prisma client).
+  functions = "../server/netlify-dist"
+
+[functions]
+  # nft ships the pre-bundled file as-is instead of re-bundling it.
+  node_bundler = "nft"
+
+# The page calls /api/... on its own origin; Netlify hands those to the function.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

@@ -5,3 +5,5 @@ dist
 generated
 .env.local
 .neon
+# Netlify Function bundle, rebuilt by `npm run build:function`.
+netlify-dist

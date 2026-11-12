@@ -12,7 +12,8 @@
     "start": "node index.js",
     "migrate": "prisma migrate dev",
     "seed": "prisma db seed",
-    "test": "node lib/health.test.js"
+    "test": "node lib/health.test.js",
+    "build:function": "esbuild netlify/api.mjs --bundle --platform=node --target=node22 --format=cjs --outfile=netlify-dist/api.cjs --define:import.meta.url=__import_meta_url --define:import.meta.dirname=__dirname --banner:js=\"const __import_meta_url = require('node:url').pathToFileURL(__filename).href;\""
   },
   "dependencies": {
     "@neon/config": "^1.14.0",
@@ -25,9 +26,11 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "keyblob": "^1.0.0",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "serverless-http": "^4.0.0"
   },
   "devDependencies": {
+    "esbuild": "^0.25.12",
     "prisma": "7.10.1"
   },
   "allowScripts": {
