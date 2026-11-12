@@ -1,7 +1,7 @@
 // Settings for the Prisma CLI (migrate, seed, studio, generate).
 // The running server never reads this file; it uses lib/db.js.
 // ES module syntax because package.json has "type": "module".
-import 'dotenv/config'; // load .env so env('DATABASE_URL') below has a value
+import './lib/env.js'; // load .env.local and .env so env() below has a value
 import { defineConfig, env } from 'prisma/config';
 
 export default defineConfig({
@@ -12,6 +12,8 @@ export default defineConfig({
     seed: 'node prisma/seed.js',
   },
   datasource: {
-    url: env('DATABASE_URL'),
+    // Migrations need Neon's direct (unpooled) connection, not the -pooler one.
+    // The running server uses the pooled DATABASE_URL (see lib/db.js).
+    url: env('DATABASE_URL_UNPOOLED'),
   },
 });

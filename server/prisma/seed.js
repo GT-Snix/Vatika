@@ -1,7 +1,8 @@
-// Load .env so lib/db.js can read DATABASE_URL.
-import 'dotenv/config';
+// Load .env.local and .env so lib/db.js can read DATABASE_URL.
+import '../lib/env.js';
 // Reuse the app's client so the seed connects exactly the way the server does.
 import prisma from '../lib/db.js';
+import { redact } from 'keyblob';
 
 // Order matters: on an empty table, ids are handed out in this order (Tulsi = 1 ... Giloy = 8).
 // waterIntervalHours are game-tuning values, not horticultural advice.
@@ -59,7 +60,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error(redact(e)); // masks credentials in connection errors
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

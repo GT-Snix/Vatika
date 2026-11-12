@@ -1,8 +1,9 @@
-// Must be the first import: it fills process.env from .env before
-// lib/db.js (imported via the routes) reads DATABASE_URL.
-import 'dotenv/config';
+// Must be the first import: it fills process.env from .env.local and .env
+// before lib/db.js (imported via the routes) reads DATABASE_URL.
+import './lib/env.js';
 import express from 'express';
 import cors from 'cors';
+import { redact } from 'keyblob';
 
 import plantsRouter from './routes/plants.js';
 import authRouter from './routes/auth.js';
@@ -27,7 +28,8 @@ app.use('/garden', gardenRouter);
 // so routes don't need their own try/catch.
 app.use((err, req, res, next) => {
   // The real error goes to the server log only; the client gets a generic message.
-  console.error(err);
+  // redact() masks passwords, tokens and connection-string credentials before logging.
+  console.error(redact(err));
   // err.status is set by Express itself for client mistakes (e.g. malformed JSON -> 400).
   res.status(err.status || 500).json({ error: err.status ? 'Bad request' : 'Internal server error' });
 });
